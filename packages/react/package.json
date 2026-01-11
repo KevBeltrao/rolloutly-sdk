@@ -1,0 +1,58 @@
+{
+  "name": "@rolloutly/react",
+  "version": "0.1.0",
+  "description": "Rolloutly feature flags SDK - React hooks and provider",
+  "author": "Kevin Beltrão",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KevBeltrao/rolloutly-sdk.git",
+    "directory": "packages/react"
+  },
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "rolloutly",
+    "sdk",
+    "react",
+    "hooks"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@rolloutly/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}
