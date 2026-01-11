@@ -18,21 +18,22 @@ npm install @rolloutly/react
 ```
 
 ```tsx
-import { RolloutlyProvider, useFlagEnabled } from '@rolloutly/react';
+import { RolloutlyProvider, useFlags } from '@rolloutly/react';
 
 function App() {
   return (
-    <RolloutlyProvider token="rly_your_token">
+    <RolloutlyProvider token="rly_projectId_production_xxx">
       <MyApp />
     </RolloutlyProvider>
   );
 }
 
 function MyFeature() {
-  const isEnabled = useFlagEnabled('new-feature');
+  // Get all flags as an object keyed by flag key
+  const flags = useFlags();
   
-  if (isEnabled) {
-    return <NewFeature />;
+  if (flags['new-feature']) {
+    return <NewFeature config={flags['feature-config']} />;
   }
   
   return <OldFeature />;

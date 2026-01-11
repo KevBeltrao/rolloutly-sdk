@@ -2,13 +2,13 @@
 
 import { RolloutlyClient, type FlagValue } from '@rolloutly/core';
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    useSyncExternalStore,
 } from 'react';
 
 import type { RolloutlyContextValue, RolloutlyProviderProps } from './types';
@@ -185,17 +185,25 @@ export function useFlagEnabled(key: string): boolean {
 }
 
 /**
- * Hook to get all flags with real-time updates
+ * Hook to get all flag values with real-time updates
+ * Returns an object keyed by flag key with the flag values
+ *
+ * @example
+ * const flags = useFlags();
+ * const value = flags['my-flag'];
+ *
+ * // Or with destructuring:
+ * const { 'my-flag': myFlag } = useFlags();
  */
-export function useFlags(): Record<string, FlagValue> {
+export function useFlags(): Record<string, FlagValue | undefined> {
   const client = useRolloutlyClient();
 
-  const getSnapshot = useCallback((): Record<string, FlagValue> => {
+  const getSnapshot = useCallback((): Record<string, FlagValue | undefined> => {
     const flags = client.getFlags();
 
-    return Object.entries(flags).reduce<Record<string, FlagValue>>(
+    return Object.entries(flags).reduce<Record<string, FlagValue | undefined>>(
       (acc, [key, flag]) => {
-        acc[key] = flag.enabled ? flag.value : undefined!;
+        acc[key] = flag.value;
 
         return acc;
       },

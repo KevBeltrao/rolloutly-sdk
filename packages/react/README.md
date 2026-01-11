@@ -15,12 +15,12 @@ yarn add @rolloutly/react
 ## Quick Start
 
 ```tsx
-import { RolloutlyProvider, useFlag, useFlagEnabled } from '@rolloutly/react';
+import { RolloutlyProvider, useFlags, useFlagEnabled } from '@rolloutly/react';
 
 // 1. Wrap your app with the provider
 function App() {
   return (
-    <RolloutlyProvider token="rly_your_project_production_xxx">
+    <RolloutlyProvider token="rly_projectId_production_xxx">
       <MyApp />
     </RolloutlyProvider>
   );
@@ -28,14 +28,26 @@ function App() {
 
 // 2. Use hooks in your components
 function MyFeature() {
-  const isNewCheckout = useFlagEnabled('new-checkout');
-  const rateLimit = useFlag<number>('api-rate-limit');
-
-  if (isNewCheckout) {
-    return <NewCheckout rateLimit={rateLimit} />;
+  // Get all flags as an object (recommended)
+  const flags = useFlags();
+  
+  // Access flags by key
+  if (flags['new-checkout']) {
+    return <NewCheckout rateLimit={flags['rate-limit']} />;
   }
 
   return <OldCheckout />;
+}
+
+// Or check boolean flags with useFlagEnabled
+function Banner() {
+  const showBanner = useFlagEnabled('show-banner');
+  
+  if (showBanner) {
+    return <PromoBanner />;
+  }
+  
+  return null;
 }
 ```
 
@@ -91,13 +103,21 @@ if (showBanner) {
 }
 ```
 
-### `useFlags(): Record<string, FlagValue>`
+### `useFlags(): Record<string, FlagValue | undefined>`
 
-Get all flags as a key-value object.
+Get all flag values as a key-value object. This is the recommended way to access multiple flags.
 
 ```tsx
 const flags = useFlags();
-console.log(flags['my-feature']); // true
+
+// Access by key
+const myFeature = flags['my-feature'];
+
+// Or destructure (use bracket notation for keys with dashes)
+const { 'new-checkout': newCheckout, 'show-banner': showBanner } = useFlags();
+
+// For keys without dashes, simple destructuring works
+const { myFeature, anotherFlag } = useFlags();
 ```
 
 ### `useRolloutly(): RolloutlyContextValue`
