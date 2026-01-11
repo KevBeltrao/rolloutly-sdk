@@ -28,6 +28,7 @@ export class RolloutlyClient {
     }
   >;
   private flags: FlagMap = {};
+  private flagValuesCache: Record<string, FlagValue | undefined> = {};
   private status: ClientStatus = 'initializing';
   private error: Error | null = null;
   private listeners: Set<FlagChangeListener> = new Set();
@@ -95,6 +96,14 @@ export class RolloutlyClient {
    */
   getFlags(): FlagMap {
     return { ...this.flags };
+  }
+
+  /**
+   * Get all flag values as a stable object (for React hooks)
+   * Returns a cached object that only changes when flags change
+   */
+  getFlagValues(): Record<string, FlagValue | undefined> {
+    return this.flagValuesCache;
   }
 
   /**
@@ -298,6 +307,7 @@ export class RolloutlyClient {
 
       if (cached) {
         this.flags = JSON.parse(cached) as FlagMap;
+        this.updateFlagValuesCache();
         this.log('Loaded cached flags');
       }
     } catch {
@@ -315,7 +325,19 @@ export class RolloutlyClient {
     }
   }
 
+  private updateFlagValuesCache(): void {
+    // Create a new cache object only when flags change
+    this.flagValuesCache = Object.entries(this.flags).reduce<
+      Record<string, FlagValue | undefined>
+    >((acc, [key, flag]) => {
+      acc[key] = flag.value;
+
+      return acc;
+    }, {});
+  }
+
   private notifyListeners(): void {
+    this.updateFlagValuesCache();
     this.listeners.forEach((listener) => listener());
   }
 

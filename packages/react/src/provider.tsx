@@ -198,18 +198,13 @@ export function useFlagEnabled(key: string): boolean {
 export function useFlags(): Record<string, FlagValue | undefined> {
   const client = useRolloutlyClient();
 
-  const getSnapshot = useCallback((): Record<string, FlagValue | undefined> => {
-    const flags = client.getFlags();
-
-    return Object.entries(flags).reduce<Record<string, FlagValue | undefined>>(
-      (acc, [key, flag]) => {
-        acc[key] = flag.value;
-
-        return acc;
-      },
-      {},
-    );
-  }, [client]);
+  // Use the client's cached flag values to avoid creating new objects
+  const getSnapshot = useCallback(
+    (): Record<string, FlagValue | undefined> => {
+      return client.getFlagValues();
+    },
+    [client],
+  );
 
   const subscribe = useCallback(
     (onStoreChange: () => void): (() => void) => {
