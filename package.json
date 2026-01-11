@@ -18,7 +18,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "pnpm -r clean && rm -rf node_modules",
-    "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "publish:core": "cd packages/core && npm publish --access public",
+    "publish:react": "cd packages/react && npm publish --access public",
+    "publish:all": "pnpm publish:core && pnpm publish:react",
+    "release": "pnpm build && pnpm publish:all"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
