@@ -1,6 +1,6 @@
 {
   "name": "@rolloutly/react",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Rolloutly feature flags SDK - React hooks and provider",
   "author": "Kevin Beltrão",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@rolloutly/core": "^0.1.2"
+    "@rolloutly/core": "^0.1.3"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

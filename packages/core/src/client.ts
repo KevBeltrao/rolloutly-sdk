@@ -1,25 +1,41 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import {
-  getDatabase,
-  ref,
-  onValue,
-  off,
-  type Database,
-  type Unsubscribe,
+    getDatabase,
+    off,
+    onValue,
+    ref,
+    type Database,
+    type Unsubscribe,
 } from 'firebase/database';
 
 import type {
-  ClientStatus,
-  Flag,
-  FlagChangeListener,
-  FlagMap,
-  FlagValue,
-  ParsedToken,
-  RolloutlyConfig,
+    ClientStatus,
+    Flag,
+    FlagChangeListener,
+    FlagMap,
+    FlagValue,
+    ParsedToken,
+    RolloutlyConfig,
 } from './types';
 
 const DEFAULT_BASE_URL = 'https://rolloutly.com';
 const CACHE_KEY = 'rolloutly_flags';
+
+/**
+ * Convert a string to camelCase
+ * 'instagram-integration' -> 'instagramIntegration'
+ * 'my_feature_flag' -> 'myFeatureFlag'
+ */
+const toCamelCase = (str: string): string => {
+  return str.replace(/[-_](.)/g, (_, char: string) => char.toUpperCase());
+};
+
+/**
+ * Check if a key needs camelCase conversion (has hyphens or underscores)
+ */
+const needsCamelCase = (key: string): boolean => {
+  return key.includes('-') || key.includes('_');
+};
 
 export class RolloutlyClient {
   private config: Required<
@@ -80,12 +96,27 @@ export class RolloutlyClient {
 
   /**
    * Get a single flag value
+   * Supports both original keys ('instagram-integration') and camelCase ('instagramIntegration')
    */
   getFlag<T extends FlagValue = FlagValue>(key: string): T | undefined {
-    const flag = this.flags[key];
+    // Try direct lookup first
+    let flag = this.flags[key];
+
+    // If not found and key is camelCase, try to find original key
+    if (!flag) {
+      const originalKey = this.findOriginalKey(key);
+
+      if (originalKey) {
+        flag = this.flags[originalKey];
+      }
+    }
 
     if (flag) {
-      return (flag.enabled ? flag.value : this.config.defaultFlags[key]) as T;
+      const defaultKey = this.findOriginalKey(key) || key;
+
+      return (
+        flag.enabled ? flag.value : this.config.defaultFlags[defaultKey]
+      ) as T;
     }
 
     return this.config.defaultFlags[key] as T;
@@ -108,16 +139,29 @@ export class RolloutlyClient {
 
   /**
    * Check if a boolean flag is enabled
+   * Supports both original keys ('instagram-integration') and camelCase ('instagramIntegration')
    */
   isEnabled(key: string): boolean {
-    const flag = this.flags[key];
+    // Try direct lookup first
+    let flag = this.flags[key];
+    let lookupKey = key;
+
+    // If not found and key is camelCase, try to find original key
+    if (!flag) {
+      const originalKey = this.findOriginalKey(key);
+
+      if (originalKey) {
+        flag = this.flags[originalKey];
+        lookupKey = originalKey;
+      }
+    }
 
     if (!flag) {
-      return Boolean(this.config.defaultFlags[key]);
+      return Boolean(this.config.defaultFlags[lookupKey]);
     }
 
     if (!flag.enabled) {
-      return Boolean(this.config.defaultFlags[key]);
+      return Boolean(this.config.defaultFlags[lookupKey]);
     }
 
     return flag.type === 'boolean' ? Boolean(flag.value) : true;
@@ -170,6 +214,26 @@ export class RolloutlyClient {
   }
 
   // ==================== Private Methods ====================
+
+  /**
+   * Find the original flag key from a camelCase version
+   * 'instagramIntegration' -> 'instagram-integration' (if it exists in flags)
+   */
+  private findOriginalKey(camelKey: string): string | null {
+    // If the key exists directly, return null (no conversion needed)
+    if (this.flags[camelKey]) {
+      return null;
+    }
+
+    // Search for a flag whose camelCase version matches
+    for (const key of Object.keys(this.flags)) {
+      if (needsCamelCase(key) && toCamelCase(key) === camelKey) {
+        return key;
+      }
+    }
+
+    return null;
+  }
 
   private parseToken(token: string): ParsedToken | null {
     const parts = token.split('_');
@@ -327,10 +391,18 @@ export class RolloutlyClient {
 
   private updateFlagValuesCache(): void {
     // Create a new cache object only when flags change
+    // Include both original keys and camelCase versions for easy destructuring
     this.flagValuesCache = Object.entries(this.flags).reduce<
       Record<string, FlagValue | undefined>
     >((acc, [key, flag]) => {
+      // Always include original key
       acc[key] = flag.value;
+
+      // If key has hyphens or underscores, also add camelCase version
+      if (needsCamelCase(key)) {
+        const camelKey = toCamelCase(key);
+        acc[camelKey] = flag.value;
+      }
 
       return acc;
     }, {});

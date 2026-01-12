@@ -107,17 +107,23 @@ if (showBanner) {
 
 Get all flag values as a key-value object. This is the recommended way to access multiple flags.
 
+**CamelCase Support:** Flag keys with hyphens or underscores are automatically available in camelCase for easy destructuring!
+
 ```tsx
 const flags = useFlags();
 
-// Access by key
-const myFeature = flags['my-feature'];
+// Access by original key
+const myFeature = flags['instagram-integration'];
 
-// Or destructure (use bracket notation for keys with dashes)
-const { 'new-checkout': newCheckout, 'show-banner': showBanner } = useFlags();
+// Or use camelCase version (automatically available!)
+const myFeature = flags.instagramIntegration;
 
-// For keys without dashes, simple destructuring works
-const { myFeature, anotherFlag } = useFlags();
+// Clean destructuring with camelCase
+const { instagramIntegration, newCheckout, showBanner } = useFlags();
+
+// Both formats work:
+// 'instagram-integration' -> instagramIntegration
+// 'my_feature_flag' -> myFeatureFlag
 ```
 
 ### `useRolloutly(): RolloutlyContextValue`
