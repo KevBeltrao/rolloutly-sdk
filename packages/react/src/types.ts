@@ -1,4 +1,4 @@
-import type { FlagValue, RolloutlyConfig } from '@rolloutly/core';
+import type { FlagValue, RolloutlyConfig, UserContext } from '@rolloutly/core';
 import type { ReactNode } from 'react';
 
 /**
@@ -15,6 +15,8 @@ export type RolloutlyProviderProps = {
   realtimeEnabled?: boolean;
   /** Default flag values */
   defaultFlags?: Record<string, FlagValue>;
+  /** User context for targeting rules evaluation */
+  user?: UserContext;
   /** Enable debug logging */
   debug?: boolean;
   /** Component to show while loading */
@@ -35,6 +37,10 @@ export type RolloutlyContextValue = {
   getFlag: <T extends FlagValue = FlagValue>(key: string) => T | undefined;
   /** Check if a boolean flag is enabled */
   isEnabled: (key: string) => boolean;
+  /** Identify the user (update user context) */
+  identify: (user: UserContext) => Promise<void>;
+  /** Reset user context (e.g., on logout) */
+  reset: () => Promise<void>;
 };
 
 /**

@@ -70,6 +70,14 @@ function Banner() {
     'api-rate-limit': 100,
   }}
   
+  // Optional: User context for targeting rules
+  user={{
+    userId: 'user-123',
+    email: 'alice@example.com',
+    orgId: 'acme-corp',
+    plan: 'pro',
+  }}
+  
   // Optional: Enable debug logging
   debug={false}
   
@@ -79,6 +87,73 @@ function Banner() {
   <App />
 </RolloutlyProvider>
 ```
+
+## User Targeting
+
+Pass user context to enable personalized flag values based on targeting rules.
+
+### Static User Context
+
+```tsx
+function App() {
+  const user = {
+    userId: 'user-123',
+    email: 'alice@example.com',
+    orgId: 'acme-corp',
+    plan: 'pro',
+    role: 'admin',
+    // Custom attributes
+    betaUser: true,
+  };
+
+  return (
+    <RolloutlyProvider token="rly_xxx" user={user}>
+      <MyApp />
+    </RolloutlyProvider>
+  );
+}
+```
+
+### Dynamic User Identification
+
+Use `identify()` and `reset()` to manage user context dynamically:
+
+```tsx
+function AuthComponent() {
+  const { identify, reset } = useRolloutly();
+
+  const handleLogin = async (user) => {
+    await identify({
+      userId: user.id,
+      email: user.email,
+      orgId: user.organizationId,
+      plan: user.subscription.plan,
+    });
+  };
+
+  const handleLogout = async () => {
+    await reset();
+  };
+
+  return (
+    <>
+      <button onClick={() => handleLogin(currentUser)}>Login</button>
+      <button onClick={handleLogout}>Logout</button>
+    </>
+  );
+}
+```
+
+### User Context Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `userId` | `string` | Unique user identifier |
+| `email` | `string` | User's email address |
+| `orgId` | `string` | Organization/company ID |
+| `plan` | `string` | Subscription plan |
+| `role` | `string` | User's role |
+| `[key]` | `string \| number \| boolean \| string[]` | Custom attributes |
 
 ## Hooks
 
@@ -128,13 +203,27 @@ const { instagramIntegration, newCheckout, showBanner } = useFlags();
 
 ### `useRolloutly(): RolloutlyContextValue`
 
-Get the Rolloutly context including loading and error states.
+Get the Rolloutly context including loading states, error handling, and user management.
 
 ```tsx
-const { isLoading, isError, error, getFlag, isEnabled } = useRolloutly();
+const { 
+  isLoading, 
+  isError, 
+  error, 
+  getFlag, 
+  isEnabled,
+  identify,  // Update user context
+  reset,     // Clear user context
+} = useRolloutly();
 
 if (isLoading) return <Spinner />;
 if (isError) return <Error message={error?.message} />;
+
+// Identify user (e.g., after login)
+await identify({ userId: 'user-123', email: 'alice@example.com' });
+
+// Reset user context (e.g., on logout)
+await reset();
 ```
 
 ### `useRolloutlyClient(): RolloutlyClient`

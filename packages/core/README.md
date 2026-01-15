@@ -62,10 +62,69 @@ const client = new RolloutlyClient({
     'api-rate-limit': 100,
   },
 
+  // Optional: User context for targeting rules
+  user: {
+    userId: 'user-123',
+    email: 'alice@example.com',
+    orgId: 'acme-corp',
+    plan: 'pro',
+  },
+
   // Optional: Enable debug logging (default: false)
   debug: true,
 });
 ```
+
+## User Targeting
+
+Pass user context to enable personalized flag values based on targeting rules.
+
+```typescript
+const client = new RolloutlyClient({
+  token: 'rly_xxx',
+  user: {
+    userId: 'user-123',
+    email: 'alice@example.com',
+    orgId: 'acme-corp',
+    plan: 'pro',
+    role: 'admin',
+    // Custom attributes
+    betaUser: true,
+    signupDate: '2024-01-15',
+  },
+});
+
+await client.waitForInit();
+
+// Flags are personalized based on targeting rules
+if (client.isEnabled('premium-feature')) {
+  // Show premium feature
+}
+
+// Update user context (e.g., after login)
+await client.identify({
+  userId: 'user-456',
+  email: 'bob@example.com',
+  plan: 'enterprise',
+});
+
+// Clear user context (e.g., on logout)
+await client.reset();
+
+// Get current user context
+const currentUser = client.getUser();
+```
+
+### User Context Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `userId` | `string` | Unique user identifier |
+| `email` | `string` | User's email address |
+| `orgId` | `string` | Organization/company ID |
+| `plan` | `string` | Subscription plan |
+| `role` | `string` | User's role |
+| `[key]` | `string \| number \| boolean \| string[]` | Custom attributes |
 
 ## API Reference
 
@@ -80,6 +139,9 @@ const client = new RolloutlyClient({
 - `getStatus(): ClientStatus` - Get client status ('initializing' | 'ready' | 'error')
 - `getError(): Error | null` - Get the last error
 - `subscribe(listener: () => void): () => void` - Subscribe to flag changes
+- `identify(user: UserContext): Promise<void>` - Update user context and re-fetch flags
+- `reset(): Promise<void>` - Clear user context and re-fetch flags
+- `getUser(): UserContext | undefined` - Get current user context
 - `close(): void` - Cleanup and disconnect
 
 ## For React

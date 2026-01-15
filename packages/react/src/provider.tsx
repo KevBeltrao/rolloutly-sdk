@@ -1,12 +1,13 @@
 'use client';
 
-import { RolloutlyClient, type FlagValue } from '@rolloutly/core';
+import { RolloutlyClient, type FlagValue, type UserContext } from '@rolloutly/core';
 import {
     createContext,
     useCallback,
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
     useSyncExternalStore,
 } from 'react';
@@ -34,6 +35,7 @@ export function RolloutlyProvider({
   baseUrl,
   realtimeEnabled = true,
   defaultFlags,
+  user,
   debug = false,
   loadingComponent,
 }: RolloutlyProviderProps): JSX.Element {
@@ -41,15 +43,33 @@ export function RolloutlyProvider({
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Track if user changed to re-identify
+  const prevUserRef = useRef<UserContext | undefined>(user);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- user changes handled via identify() in useEffect
   const client = useMemo(() => {
     return new RolloutlyClient({
       token,
       baseUrl,
       realtimeEnabled,
       defaultFlags,
+      user,
       debug,
     });
   }, [token, baseUrl, realtimeEnabled, defaultFlags, debug]);
+
+  // Handle user context changes
+  useEffect(() => {
+    if (prevUserRef.current !== user && client) {
+      prevUserRef.current = user;
+
+      if (user) {
+        void client.identify(user);
+      } else {
+        void client.reset();
+      }
+    }
+  }, [user, client]);
 
   useEffect(() => {
     let mounted = true;
@@ -110,7 +130,7 @@ export function useRolloutlyClient(): RolloutlyClient {
 }
 
 /**
- * Hook to get Rolloutly status
+ * Hook to get Rolloutly status and utilities
  */
 export function useRolloutly(): RolloutlyContextValue {
   const { client, isLoading, isError, error } = useContext(RolloutlyContext);
@@ -133,12 +153,25 @@ export function useRolloutly(): RolloutlyContextValue {
     [client],
   );
 
+  const identify = useCallback(
+    async (user: UserContext): Promise<void> => {
+      return client.identify(user);
+    },
+    [client],
+  );
+
+  const reset = useCallback(async (): Promise<void> => {
+    return client.reset();
+  }, [client]);
+
   return {
     isLoading,
     isError,
     error,
     getFlag,
     isEnabled,
+    identify,
+    reset,
   };
 }
 

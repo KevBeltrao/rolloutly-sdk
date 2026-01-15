@@ -19,6 +19,25 @@ export type Flag = {
 export type FlagMap = Record<string, Flag>;
 
 /**
+ * User context for targeting rules evaluation
+ * Pass user properties to enable personalized flag values
+ */
+export type UserContext = {
+  /** Unique user identifier */
+  userId?: string;
+  /** User's email address */
+  email?: string;
+  /** Organization/company identifier */
+  orgId?: string;
+  /** User's subscription plan (e.g., 'free', 'pro', 'enterprise') */
+  plan?: string;
+  /** User's role in the application */
+  role?: string;
+  /** Custom attributes for targeting */
+  [key: string]: string | number | boolean | string[] | undefined;
+};
+
+/**
  * Configuration options for RolloutlyClient
  */
 export type RolloutlyConfig = {
@@ -30,6 +49,8 @@ export type RolloutlyConfig = {
   realtimeEnabled?: boolean;
   /** Default flag values to use before flags are loaded */
   defaultFlags?: Record<string, FlagValue>;
+  /** User context for targeting rules evaluation */
+  user?: UserContext;
   /** Enable debug logging (default: false) */
   debug?: boolean;
 };
