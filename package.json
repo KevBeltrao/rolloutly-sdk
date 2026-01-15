@@ -19,8 +19,8 @@
     "test:watch": "vitest",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "publish:core": "cd packages/core && npm publish --access public",
-    "publish:react": "cd packages/react && npm publish --access public",
+    "publish:core": "cd packages/core && pnpm publish --access public --no-git-checks",
+    "publish:react": "cd packages/react && pnpm publish --access public --no-git-checks",
     "publish:all": "pnpm publish:core && pnpm publish:react",
     "release": "pnpm build && pnpm publish:all"
   },
