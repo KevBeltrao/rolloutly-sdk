@@ -1,6 +1,6 @@
 {
   "name": "@rolloutly/core",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Rolloutly feature flags SDK - Core JavaScript client",
   "author": "Kevin Beltrão",
   "license": "MIT",
