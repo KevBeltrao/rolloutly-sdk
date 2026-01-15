@@ -6,4 +6,5 @@ export type {
   FlagMap,
   FlagValue,
   RolloutlyConfig,
+  UserContext,
 } from './types';

@@ -16,6 +16,7 @@ import type {
     FlagValue,
     ParsedToken,
     RolloutlyConfig,
+    UserContext,
 } from './types';
 
 const DEFAULT_BASE_URL = 'https://rolloutly.com';
@@ -39,8 +40,9 @@ const needsCamelCase = (key: string): boolean => {
 
 export class RolloutlyClient {
   private config: Required<
-    Omit<RolloutlyConfig, 'defaultFlags'> & {
+    Omit<RolloutlyConfig, 'defaultFlags' | 'user'> & {
       defaultFlags: Record<string, FlagValue>;
+      user: UserContext | undefined;
     }
   >;
   private flags: FlagMap = {};
@@ -62,6 +64,7 @@ export class RolloutlyClient {
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
       realtimeEnabled: config.realtimeEnabled ?? true,
       defaultFlags: config.defaultFlags ?? {},
+      user: config.user,
       debug: config.debug ?? false,
     };
 
@@ -193,6 +196,36 @@ export class RolloutlyClient {
   }
 
   /**
+   * Update the user context and re-fetch flags
+   * Call this when the user logs in or their attributes change
+   */
+  async identify(user: UserContext): Promise<void> {
+    this.config.user = user;
+    this.log('User identified:', user.userId || user.email || 'anonymous');
+
+    // Re-fetch flags with new user context
+    await this.fetchFlags();
+  }
+
+  /**
+   * Clear the user context (e.g., on logout)
+   */
+  async reset(): Promise<void> {
+    this.config.user = undefined;
+    this.log('User context reset');
+
+    // Re-fetch flags without user context
+    await this.fetchFlags();
+  }
+
+  /**
+   * Get the current user context
+   */
+  getUser(): UserContext | undefined {
+    return this.config.user;
+  }
+
+  /**
    * Cleanup and disconnect
    */
   close(): void {
@@ -273,10 +306,18 @@ export class RolloutlyClient {
   private async fetchFlags(): Promise<void> {
     const url = `${this.config.baseUrl}/api/sdk/flags`;
 
+    // Use POST with user context if available, otherwise GET
+    const hasUserContext = this.config.user && Object.keys(this.config.user).length > 0;
+
     const response = await fetch(url, {
+      method: hasUserContext ? 'POST' : 'GET',
       headers: {
         Authorization: `Bearer ${this.config.token}`,
+        ...(hasUserContext && { 'Content-Type': 'application/json' }),
       },
+      ...(hasUserContext && {
+        body: JSON.stringify({ user: this.config.user }),
+      }),
     });
 
     if (!response.ok) {
@@ -287,7 +328,7 @@ export class RolloutlyClient {
     this.flags = data.flags;
     this.cacheFlags();
     this.notifyListeners();
-    this.log('Flags fetched:', Object.keys(this.flags).length);
+    this.log('Flags fetched:', Object.keys(this.flags).length, hasUserContext ? '(with user context)' : '');
   }
 
   private async setupRealtime(): Promise<void> {
@@ -321,18 +362,27 @@ export class RolloutlyClient {
         const data = snapshot.val() as Record<string, Flag> | null;
 
         if (data) {
-          // Convert realtime format to our flag format
-          this.flags = Object.entries(data).reduce<FlagMap>(
-            (acc, [key, flag]) => {
-              acc[key] = { ...flag, key };
+          const hasUserContext = this.config.user && Object.keys(this.config.user).length > 0;
 
-              return acc;
-            },
-            {},
-          );
-          this.cacheFlags();
-          this.notifyListeners();
-          this.log('Realtime update received');
+          if (hasUserContext) {
+            // When user context is provided, re-fetch from API to get
+            // server-evaluated targeting rules instead of using raw values
+            this.log('Realtime change detected, re-fetching with user context...');
+            void this.fetchFlags();
+          } else {
+            // No user context, use realtime values directly
+            this.flags = Object.entries(data).reduce<FlagMap>(
+              (acc, [key, flag]) => {
+                acc[key] = { ...flag, key };
+
+                return acc;
+              },
+              {},
+            );
+            this.cacheFlags();
+            this.notifyListeners();
+            this.log('Realtime update received');
+          }
         }
       },
       (error) => {

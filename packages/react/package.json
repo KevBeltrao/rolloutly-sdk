@@ -44,7 +44,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@rolloutly/core": "^0.1.3"
+    "@rolloutly/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
